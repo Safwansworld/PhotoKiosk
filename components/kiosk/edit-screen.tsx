@@ -42,6 +42,13 @@ export function EditScreen({
       enabled: true,
     },
     {
+      id: "suit",
+      icon: <Shirt className="h-6 w-6" />,
+      label: language === "ENG" ? "Change Suit" : "സൂട്ട മാറ്റുക",
+      description: language === "ENG" ? "Add formal attire" : "ഔദ്യോഗിക വേഷം ചേർക്കുക",
+      enabled: false,
+    },
+    {
       id: "lighting",
       icon: <Sun className="h-6 w-6" />,
       label: language === "ENG" ? "Fix Lighting" : "ലൈറ്റിംഗ് ശരിയാക്കുക",
