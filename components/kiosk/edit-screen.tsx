@@ -307,7 +307,13 @@ export function EditScreen({
           // Position at bottom by default + offset
           const finalY = (targetH - finalH) + suitTransform.y
 
-          ctx.drawImage(suitImg, finalX, finalY, finalW, finalH)
+          try {
+            if (suitImg.complete && suitImg.naturalWidth > 0) {
+              ctx.drawImage(suitImg, finalX, finalY, finalW, finalH)
+            }
+          } catch (e) {
+            console.error("Failed to draw suit image", e)
+          }
         }
       }
 
