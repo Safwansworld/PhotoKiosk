@@ -4,7 +4,7 @@ import React from "react"
 
 
 import { useState, useEffect, useRef, useCallback } from "react"
-import { Check, Lock, Sparkles, Sun, Crop, ArrowRight, Loader2 } from "lucide-react"
+import { Check, Lock, Sparkles, Sun, Crop, ArrowRight, Loader2, Palette } from "lucide-react"
 import type { PhotoData } from "@/app/page"
 import { removeBackground } from "@/lib/image-segmenter"
 import { useToast } from "@/hooks/use-toast"
@@ -57,6 +57,16 @@ export function EditScreen({
       locked: true,
     },
   ])
+
+  const [selectedColor, setSelectedColor] = useState<string>("#FFFFFF")
+
+  const BACKGROUND_COLORS = [
+    { name: "White", value: "#FFFFFF" },
+    { name: "Light Blue", value: "#BFDBFE" },
+    { name: "Royal Blue", value: "#2563EB" },
+    { name: "Grey", value: "#D1D5DB" },
+    { name: "Red", value: "#EF4444" },
+  ]
 
   const [bgRemovedCache, setBgRemovedCache] = useState<string | null>(null)
   const [finalImageUrl, setFinalImageUrl] = useState<string | null>(null)
@@ -189,7 +199,8 @@ export function EditScreen({
       canvas.height = targetH
 
       // Draw background white first (standard for ID) if transparency
-      ctx.fillStyle = "#FFFFFF"
+      // Draw background
+      ctx.fillStyle = selectedColor
       ctx.fillRect(0, 0, targetW, targetH)
 
       // Calculate Crop (Center-Crop logic)
@@ -245,7 +256,7 @@ export function EditScreen({
 
     const timer = setTimeout(composeImage, 100)
     return () => clearTimeout(timer)
-  }, [toggles, bgRemovedCache, photoData.imageUrl, processingRef.current])
+  }, [toggles, bgRemovedCache, photoData.imageUrl, processingRef.current, selectedColor])
 
 
   const handleProceed = () => {
@@ -380,6 +391,46 @@ export function EditScreen({
               </div>
             ))}
           </div>
+
+          {/* Background Color Picker - Only show if BG Removal is ON */}
+          {toggles.find(t => t.id === "background")?.enabled && (
+            <div className="mb-10 rounded-2xl border-2 border-[#E5E7EB] bg-white p-5">
+              <div className="mb-4 flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-100 text-purple-600">
+                  <Palette size={20} />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-[#0F172A]">
+                    {language === "ENG" ? "Background Color" : "പശ്ചാത്തല നിറം"}
+                  </h3>
+                  <p className="text-sm text-[#6B7280]">
+                    {language === "ENG" ? "Select a static background" : "ഒരു പശ്ചാത്തലം തിരഞ്ഞെടുക്കുക"}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap gap-4">
+                {BACKGROUND_COLORS.map((color) => (
+                  <button
+                    key={color.name}
+                    onClick={() => setSelectedColor(color.value)}
+                    className={`group relative h-12 w-12 rounded-full border-2 transition-all ${selectedColor === color.value
+                        ? 'border-blue-600 scale-110 shadow-md ring-2 ring-blue-100'
+                        : 'border-gray-200 hover:scale-105 hover:border-blue-300'
+                      }`}
+                    style={{ backgroundColor: color.value }}
+                    aria-label={`Select ${color.name} background`}
+                  >
+                    {selectedColor === color.value && (
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <Check className={`w-6 h-6 ${color.value === '#FFFFFF' ? 'text-black' : 'text-white'}`} />
+                      </div>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Proceed to Payment Button */}
           <button
