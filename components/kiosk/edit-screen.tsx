@@ -80,7 +80,7 @@ export function EditScreen({
     {
       id: "navy",
       name: "Navy Suit",
-      src: "https://png.pngtree.com/png-clipart/20230820/ourmid/pngtree-formal-suit-for-passport-photo-png-image_9189043.png"
+      src: "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMDAgMTUwIj4KICA8cGF0aCBkPSJNNDAgMTUwIEw0MCA1MCBMODAgMjAgTDEyMCAyMCBMMTYwIDUwIEwxNjAgMTUwIFoiIGZpbGw9IiMxZTI5M2IiIC8+CiAgPHBhdGggZD0iTTgwIDIwIEwxMDAgNTAgTDEyMCAyMCIgZmlsbD0id2hpdGUiIC8+CiAgPHBhdGggZD0iTTEwMCAyMCBMMTAwIDYwIiBzdHJva2U9IiMzMzMiIHN0cm9rZS13aWR0aD0iNCIgLz4KPC9zdmc+"
     },
     {
       id: "black",
