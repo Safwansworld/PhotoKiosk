@@ -5,7 +5,7 @@ import React from "react"
 
 import { useState, useEffect, useRef, useCallback } from "react"
 import { Check, Lock, Sparkles, Sun, Crop, ArrowRight, Loader2, Palette, Shirt, Move, ZoomIn, ZoomOut, ChevronUp, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react"
-import type { PhotoData } from "@/app/page"
+import type { PhotoData } from "@/components/kiosk/kiosk-main"
 import { removeBackground } from "@/lib/image-segmenter"
 import { useToast } from "@/hooks/use-toast"
 
@@ -57,6 +57,35 @@ export function EditScreen({
       locked: true,
     },
   ])
+
+  const [selectedColor, setSelectedColor] = useState<string>("#FFFFFF")
+
+  const BACKGROUND_COLORS = [
+    { name: "White", value: "#FFFFFF" },
+    { name: "Light Blue", value: "#BFDBFE" },
+    { name: "Royal Blue", value: "#2563EB" },
+    { name: "Grey", value: "#D1D5DB" },
+    { name: "Red", value: "#EF4444" },
+  ]
+
+  // SUIT ASSETS (SVG Data URIs for demo)
+  const SUITS = [
+    {
+      id: "navy",
+      name: "Navy Suit",
+      src: "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMDAgMTUwIj4KICA8cGF0aCBkPSJNNDAgMTUwIEw0MCA1MCBMODAgMjAgTDEyMCAyMCBMMTYwIDUwIEwxNjAgMTUwIFoiIGZpbGw9IiMxZTI5M2IiIC8+CiAgPHBhdGggZD0iTTgwIDIwIEwxMDAgNTAgTDEyMCAyMCIgZmlsbD0id2hpdGUiIC8+CiAgPHBhdGggZD0iTTEwMCAyMCBMMTAwIDYwIiBzdHJva2U9IiNjYzAwMDAiIHN0cm9rZS13aWR0aD0iNCIgLz4KPC9zdmc+"
+    },
+    {
+      id: "black",
+      name: "Black Suit",
+      src: "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMDAgMTUwIj4KICA8cGF0aCBkPSJNNDAgMTUwIEw0MCA1MCBMODAgMjAgTDEyMCAyMCBMMTYwIDUwIEwxNjAgMTUwIFoiIGZpbGw9IiMxMTE4MjciIC8+CiAgPHBhdGggZD0iTTgwIDIwIEwxMDAgNTAgTDEyMCAyMCIgZmlsbD0id2hpdGUiIC8+CiAgPHBhdGggZD0iTTEwMCAyMCBMMTAwIDYwIiBzdHJva2U9IiMzMzMiIHN0cm9rZS13aWR0aD0iNCIgLz4KPC9zdmc+"
+    },
+    {
+      id: "grey",
+      name: "Grey Suit",
+      src: "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMDAgMTUwIj4KICA8cGF0aCBkPSJNNDAgMTUwIEw0MCA1MCBMODAgMjAgTDEyMCAyMCBMMTYwIDUwIEwxNjAgMTUwIFoiIGZpbGw9IiM0YjU1NjMiIC8+CiAgPHBhdGggZD0iTTgwIDIwIEwxMDAgNTAgTDEyMCAyMCIgZmlsbD0id2hpdGUiIC8+CiAgPHBhdGggZD0iTTEwMCAyMCBMMTAwIDYwIiBzdHJva2U9IiMxMTE4MjciIHN0cm9rZS13aWR0aD0iNCIgLz4KPC9zdmc+"
+    },
+  ]
 
   const [selectedSuit, setSelectedSuit] = useState<string | null>(null)
   const [suitTransform, setSuitTransform] = useState({ x: 0, y: 50, scale: 1.0 })
@@ -476,8 +505,8 @@ export function EditScreen({
                       key={suit.id}
                       onClick={() => setSelectedSuit(suit.id)}
                       className={`flex flex-col items-center gap-2 p-2 rounded-xl transition-all ${selectedSuit === suit.id
-                          ? "bg-blue-50 border-2 border-blue-500 shadow-sm"
-                          : "border-2 border-transparent hover:bg-gray-50"
+                        ? "bg-blue-50 border-2 border-blue-500 shadow-sm"
+                        : "border-2 border-transparent hover:bg-gray-50"
                         }`}
                     >
                       <div className="w-16 h-16 bg-gray-100 rounded-lg overflow-hidden relative">
