@@ -16,6 +16,13 @@ export const metadata: Metadata = {
 
 import { Toaster } from "@/components/ui/toaster"
 
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+}
+
 export default function RootLayout({
   children,
 }: Readonly<{
