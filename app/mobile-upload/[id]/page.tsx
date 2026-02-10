@@ -102,7 +102,10 @@ export default function MobileUploadPage() {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-6 safe-area-inset-bottom">
+        <div
+            className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-6 safe-area-inset-bottom"
+            style={{ width: '100%', minHeight: '100vh', overflowX: 'hidden' }}
+        >
             {/* Visual Debug helper for mobile */}
             <div className="fixed top-0 left-0 right-0 bg-yellow-100 text-yellow-800 text-[10px] p-1 text-center opacity-50 hover:opacity-100 z-50">
                 Debug: Page Loaded | Status: {status} | ID: {id.slice(0, 4)}...
