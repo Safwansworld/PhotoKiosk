@@ -6,12 +6,7 @@ import { supabase } from "@/lib/supabase"
 import { useParams } from "next/navigation"
 import type { Viewport } from 'next'
 
-export const viewport: Viewport = {
-    width: 'device-width',
-    initialScale: 1,
-    maximumScale: 1,
-    userScalable: false,
-}
+
 
 export default function MobileUploadPage() {
     const params = useParams()
