@@ -589,5 +589,6 @@ export function EditScreen({
           </div>
         </div>
       </div>
-      )
+    </div>
+  )
 }
