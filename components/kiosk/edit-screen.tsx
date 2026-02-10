@@ -4,7 +4,7 @@ import React from "react"
 
 
 import { useState, useEffect, useRef, useCallback } from "react"
-import { Check, Lock, Sparkles, Sun, Crop, ArrowRight, Loader2, Palette } from "lucide-react"
+import { Check, Lock, Sparkles, Sun, Crop, ArrowRight, Loader2, Palette, Shirt, Move, ZoomIn, ZoomOut, ChevronUp, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react"
 import type { PhotoData } from "@/app/page"
 import { removeBackground } from "@/lib/image-segmenter"
 import { useToast } from "@/hooks/use-toast"
@@ -58,15 +58,9 @@ export function EditScreen({
     },
   ])
 
-  const [selectedColor, setSelectedColor] = useState<string>("#FFFFFF")
+  const [selectedSuit, setSelectedSuit] = useState<string | null>(null)
+  const [suitTransform, setSuitTransform] = useState({ x: 0, y: 50, scale: 1.0 })
 
-  const BACKGROUND_COLORS = [
-    { name: "White", value: "#FFFFFF" },
-    { name: "Light Blue", value: "#BFDBFE" },
-    { name: "Royal Blue", value: "#2563EB" },
-    { name: "Grey", value: "#D1D5DB" },
-    { name: "Red", value: "#EF4444" },
-  ]
 
   const [bgRemovedCache, setBgRemovedCache] = useState<string | null>(null)
   const [finalImageUrl, setFinalImageUrl] = useState<string | null>(null)
@@ -251,12 +245,42 @@ export function EditScreen({
 
       ctx.drawImage(img, drawX, drawY, drawW, drawH, 0, 0, targetW, targetH)
 
+      // Draw Suit Overlay
+      const suitToggle = toggles.find(t => t.id === "suit")?.enabled
+      if (suitToggle && selectedSuit) {
+        const suitObj = SUITS.find(s => s.id === selectedSuit)
+        if (suitObj) {
+          const suitImg = new Image()
+          suitImg.src = suitObj.src
+          suitImg.crossOrigin = "anonymous"
+          await new Promise((r) => {
+            suitImg.onload = r
+            suitImg.onerror = r // proceed even if fail
+          })
+
+          // Calculate suit position based on transform
+          // Default width: relative to canvas width
+          const baseSuitW = targetW * 0.8 // 80% of width
+          const baseSuitH = baseSuitW * (suitImg.height / suitImg.width) // constant aspect
+
+          const finalW = baseSuitW * suitTransform.scale
+          const finalH = baseSuitH * suitTransform.scale
+
+          // Center horizontally by default + offset
+          const finalX = (targetW - finalW) / 2 + suitTransform.x
+          // Position at bottom by default + offset
+          const finalY = (targetH - finalH) + suitTransform.y
+
+          ctx.drawImage(suitImg, finalX, finalY, finalW, finalH)
+        }
+      }
+
       setFinalImageUrl(canvas.toDataURL("image/jpeg", 0.95))
     }
 
     const timer = setTimeout(composeImage, 100)
     return () => clearTimeout(timer)
-  }, [toggles, bgRemovedCache, photoData.imageUrl, processingRef.current, selectedColor])
+  }, [toggles, bgRemovedCache, photoData.imageUrl, processingRef.current, selectedColor, selectedSuit, suitTransform])
 
 
   const handleProceed = () => {
@@ -415,8 +439,8 @@ export function EditScreen({
                     key={color.name}
                     onClick={() => setSelectedColor(color.value)}
                     className={`group relative h-12 w-12 rounded-full border-2 transition-all ${selectedColor === color.value
-                        ? 'border-blue-600 scale-110 shadow-md ring-2 ring-blue-100'
-                        : 'border-gray-200 hover:scale-105 hover:border-blue-300'
+                      ? 'border-blue-600 scale-110 shadow-md ring-2 ring-blue-100'
+                      : 'border-gray-200 hover:scale-105 hover:border-blue-300'
                       }`}
                     style={{ backgroundColor: color.value }}
                     aria-label={`Select ${color.name} background`}
@@ -429,6 +453,84 @@ export function EditScreen({
                   </button>
                 ))}
               </div>
+            </div>
+          )}
+
+          {/* Suit Selection & Adjustment */}
+          {toggles.find(t => t.id === "suit")?.enabled && (
+            <div className="mb-10 rounded-2xl border-2 border-[#E5E7EB] bg-white p-5 animate-in slide-in-from-top-4 duration-300">
+              {/* Suit Picker */}
+              <div className="mb-6">
+                <div className="mb-4 flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100 text-blue-600">
+                    <Shirt size={20} />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-[#0F172A]">Select Attire</h3>
+                    <p className="text-sm text-[#6B7280]">Choose a formal suit</p>
+                  </div>
+                </div>
+                <div className="flex gap-4">
+                  {SUITS.map((suit) => (
+                    <button
+                      key={suit.id}
+                      onClick={() => setSelectedSuit(suit.id)}
+                      className={`flex flex-col items-center gap-2 p-2 rounded-xl transition-all ${selectedSuit === suit.id
+                          ? "bg-blue-50 border-2 border-blue-500 shadow-sm"
+                          : "border-2 border-transparent hover:bg-gray-50"
+                        }`}
+                    >
+                      <div className="w-16 h-16 bg-gray-100 rounded-lg overflow-hidden relative">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={suit.src} alt={suit.name} className="w-full h-full object-contain" />
+                      </div>
+                      <span className="text-xs font-medium text-gray-700">{suit.name}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Adjustment Controls */}
+              {selectedSuit && (
+                <div className="border-t pt-4">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-3">Adjust Position & Size</p>
+                  <div className="grid grid-cols-2 gap-4">
+                    {/* Size Controls */}
+                    <div className="bg-gray-50 rounded-xl p-3 flex items-center justify-between">
+                      <button
+                        onClick={() => setSuitTransform(prev => ({ ...prev, scale: Math.max(0.5, prev.scale - 0.1) }))}
+                        className="p-2 bg-white rounded-lg shadow-sm hover:bg-gray-50 active:scale-95 text-gray-700"
+                      >
+                        <ZoomOut size={18} />
+                      </button>
+                      <span className="text-sm font-medium text-gray-600">Size</span>
+                      <button
+                        onClick={() => setSuitTransform(prev => ({ ...prev, scale: Math.min(2.0, prev.scale + 0.1) }))}
+                        className="p-2 bg-white rounded-lg shadow-sm hover:bg-gray-50 active:scale-95 text-gray-700"
+                      >
+                        <ZoomIn size={18} />
+                      </button>
+                    </div>
+
+                    {/* Position Controls */}
+                    <div className="bg-gray-50 rounded-xl p-3 flex items-center justify-center gap-2">
+                      <div className="grid grid-cols-3 gap-1">
+                        <div />
+                        <button onClick={() => setSuitTransform(prev => ({ ...prev, y: prev.y - 10 }))} className="p-1 bg-white rounded text-gray-700 shadow-sm active:bg-gray-100 w-8 h-8 flex items-center justify-center"><ChevronUp size={16} /></button>
+                        <div />
+
+                        <button onClick={() => setSuitTransform(prev => ({ ...prev, x: prev.x - 10 }))} className="p-1 bg-white rounded text-gray-700 shadow-sm active:bg-gray-100 w-8 h-8 flex items-center justify-center"><ChevronLeft size={16} /></button>
+                        <div className="flex items-center justify-center"><Move size={16} className="text-gray-400" /></div>
+                        <button onClick={() => setSuitTransform(prev => ({ ...prev, x: prev.x + 10 }))} className="p-1 bg-white rounded text-gray-700 shadow-sm active:bg-gray-100 w-8 h-8 flex items-center justify-center"><ChevronRight size={16} /></button>
+
+                        <div />
+                        <button onClick={() => setSuitTransform(prev => ({ ...prev, y: prev.y + 10 }))} className="p-1 bg-white rounded text-gray-700 shadow-sm active:bg-gray-100 w-8 h-8 flex items-center justify-center"><ChevronDown size={16} /></button>
+                        <div />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
