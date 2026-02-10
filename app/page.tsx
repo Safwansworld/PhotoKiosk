@@ -10,6 +10,15 @@ import { EditScreen } from "@/components/kiosk/edit-screen"
 import { PaymentScreen } from "@/components/kiosk/payment-screen"
 import { StatusBar } from "@/components/kiosk/status-bar"
 
+import type { Viewport } from 'next'
+
+export const viewport: Viewport = {
+  width: 1920,
+  height: 1080,
+  initialScale: 1,
+  userScalable: false,
+}
+
 export type KioskScreen = "attract" | "capture" | "upload" | "edit" | "payment"
 
 export interface PhotoData {

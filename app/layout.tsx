@@ -12,12 +12,7 @@ export const metadata: Metadata = {
   generator: 'v0.app'
 }
 
-export const viewport: Viewport = {
-  width: 1920,
-  height: 1080,
-  initialScale: 1,
-  userScalable: false,
-}
+
 
 import { Toaster } from "@/components/ui/toaster"
 
