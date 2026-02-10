@@ -81,15 +81,25 @@ export default function MobileUploadPage() {
 
     // Safety check for critical render failure
     if (!id) {
+        console.error("MobileUploadPage: Missing ID", { params })
         return (
-            <div className="min-h-screen flex items-center justify-center p-6 text-center">
-                <p className="text-red-500">Error: Invalid Upload Session ID</p>
+            <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center bg-white">
+                <p className="text-red-500 font-bold mb-4">Error: Invalid Upload Session ID</p>
+                <div className="text-xs text-gray-400 text-left bg-gray-100 p-4 rounded max-w-full overflow-auto">
+                    <p>Params: {JSON.stringify(params)}</p>
+                    <p>URL: {typeof window !== 'undefined' ? window.location.href : 'server'}</p>
+                </div>
             </div>
         )
     }
 
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-6 safe-area-inset-bottom">
+            {/* Visual Debug helper for mobile */}
+            <div className="fixed top-0 left-0 right-0 bg-yellow-100 text-yellow-800 text-[10px] p-1 text-center opacity-50 hover:opacity-100 z-50">
+                Debug: Page Loaded | Status: {status} | ID: {id.slice(0, 4)}...
+            </div>
+
             <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-8 space-y-8 text-center relative">
 
                 {/* Header / Brand */}
@@ -181,7 +191,7 @@ export default function MobileUploadPage() {
                         {/* Debug Info Footer (Visible on Mobile) */}
                         <div className="mt-8 pt-4 border-t border-gray-100 text-xs text-gray-300 font-mono break-all">
                             Session: {id.slice(0, 8)}...<br />
-                            Env: {process.env.NEXT_PUBLIC_SUPABASE_URL ? 'OK' : 'MISSING'}
+                            Env: {process.env.NEXT_PUBLIC_SUPABASE_URL ? 'OK' : 'MISSING (Using Placeholder)'}
                         </div>
                     </>
                 )}
