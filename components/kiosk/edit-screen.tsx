@@ -4,7 +4,7 @@ import React from "react"
 
 
 import { useState, useEffect, useRef, useCallback } from "react"
-import { Check, Lock, Sparkles, Sun, Crop, ArrowRight, Loader2, Palette, Shirt, Move, ZoomIn, ZoomOut, ChevronUp, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react"
+import { Check, Lock, Sparkles, Sun, Crop, ArrowRight, Loader2, Palette, Move, ZoomIn, ZoomOut, ChevronUp, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react"
 import type { PhotoData } from "@/components/kiosk/kiosk-main"
 import { removeBackground } from "@/lib/image-segmenter"
 import { useToast } from "@/hooks/use-toast"
@@ -42,13 +42,6 @@ export function EditScreen({
       enabled: true,
     },
     {
-      id: "suit",
-      icon: <Shirt className="h-6 w-6" />,
-      label: language === "ENG" ? "Change Suit" : "സൂട്ട മാറ്റുക",
-      description: language === "ENG" ? "Add formal attire" : "ഔദ്യോഗിക വേഷം ചേർക്കുക",
-      enabled: false,
-    },
-    {
       id: "lighting",
       icon: <Sun className="h-6 w-6" />,
       label: language === "ENG" ? "Fix Lighting" : "ലൈറ്റിംഗ് ശരിയാക്കുക",
@@ -74,32 +67,6 @@ export function EditScreen({
     { name: "Grey", value: "#D1D5DB" },
     { name: "Red", value: "#EF4444" },
   ]
-
-  // SUIT ASSETS (SVG Data URIs for demo)
-  const SUITS = [
-    {
-      id: "navy",
-      name: "Navy Suit",
-      src: "/—Pngtree—mens suit and tie coat_6212628.png",
-      prompt: "dark navy blue professional business suit, white shirt, blue tie"
-    },
-    {
-      id: "black",
-      name: "Black Suit",
-      src: "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMDAgMTUwIj4KICA8cGF0aCBkPSJNNDAgMTUwIEw0MCA1MCBMODAgMjAgTDEyMCAyMCBMMTYwIDUwIEwxNjAgMTUwIFoiIGZpbGw9IiMxMTE4MjciIC8+CiAgPHBhdGggZD0iTTgwIDIwIEwxMDAgNTAgTDEyMCAyMCIgZmlsbD0id2hpdGUiIC8+CiAgPHBhdGggZD0iTTEwMCAyMCBMMTAwIDYwIiBzdHJva2U9IiMzMzMiIHN0cm9rZS13aWR0aD0iNCIgLz4KPC9zdmc+",
-      prompt: "formal black tuxedo suit, white shirt, black bow tie, James Bond style"
-    },
-    {
-      id: "grey",
-      name: "Grey Suit",
-      src: "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMDAgMTUwIj4KICA8cGF0aCBkPSJNNDAgMTUwIEw0MCA1MCBMODAgMjAgTDEyMCAyMCBMMTYwIDUwIEwxNjAgMTUwIFoiIGZpbGw9IiM0YjU1NjMiIC8+CiAgPHBhdGggZD0iTTgwIDIwIEwxMDAgNTAgTDEyMCAyMCIgZmlsbD0id2hpdGUiIC8+CiAgPHBhdGggZD0iTTEwMCAyMCBMMTAwIDYwIiBzdHJva2U9IiMxMTE4MjciIHN0cm9rZS13aWR0aD0iNCIgLz4KPC9zdmc+",
-      prompt: "light grey formal business suit, white shirt, no tie, smart casual professional"
-    },
-  ]
-
-  const [selectedSuit, setSelectedSuit] = useState<string | null>(null)
-  const [suitTransform, setSuitTransform] = useState({ x: 0, y: 50, scale: 1.0 })
-
 
   const [bgRemovedCache, setBgRemovedCache] = useState<string | null>(null)
   const [finalImageUrl, setFinalImageUrl] = useState<string | null>(null)
@@ -284,98 +251,12 @@ export function EditScreen({
 
       ctx.drawImage(img, drawX, drawY, drawW, drawH, 0, 0, targetW, targetH)
 
-      // Draw Suit Overlay
-      // LEGACY: If we want manual overlay, we keep this.
-      // BUT for AI Suit, we handle it separately via API call.
-      // So here we only draw if it's NOT an AI suit process.
-      // Actually, let's keep the manual one for "preview" or fallback if AI fails?
-      // No, let's switch entirely to AI Trigger.
-
-      // If we are in "Suit" mode, we don't draw the overlay here.
-      // Instead, selecting a suit triggers the API call which updates 'bgRemovedCache' (the source).
-      // So this canvas logic just renders the current source.
-
       setFinalImageUrl(canvas.toDataURL("image/jpeg", 0.95))
     }
 
     const timer = setTimeout(composeImage, 100)
     return () => clearTimeout(timer)
-  }, [toggles, bgRemovedCache, photoData.imageUrl, processingRef.current, selectedColor, selectedSuit, suitTransform])
-
-  // Handle Suit Selection -> Trigger AI
-  useEffect(() => {
-    const suitToggle = toggles.find(t => t.id === "suit")?.enabled
-    if (suitToggle && selectedSuit) {
-      // Find suit details
-      const suitObj = SUITS.find(s => s.id === selectedSuit)
-      if (!suitObj) return
-
-      // We only trigger if we haven't already processed this specific suit for this image
-      // For simplicity, let's just trigger when button clicked (handled in handler)
-      // or here if we track "lastProcessedSuit".
-    }
-  }, [selectedSuit, toggles])
-
-  const handleSuitSelect = async (suitId: string) => {
-    setSelectedSuit(suitId)
-    const suitObj = SUITS.find(s => s.id === suitId)
-    if (!suitObj) return
-
-    // Trigger AI Generation
-    try {
-      setIsProcessing(true)
-      setToggles(prev => prev.map(t => t.id === "suit" ? { ...t, locked: true } : t)) // Lock while processing
-
-      const sourceImage = bgRemovedCache || photoData.imageUrl
-
-      const response = await fetch("/api/ai-suit", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          image: sourceImage,
-          prompt: suitObj.prompt || "professional business suit",
-          // mask: we could generate a simple mask here if we had coordinates
-        })
-      })
-
-      const data = await response.json()
-
-      if (data.error) {
-        throw new Error(data.error)
-      }
-
-      if (data.output && data.output[0]) {
-        setBgRemovedCache(data.output[0]) // Update source with AI result
-
-        if (data.mock) {
-          toast({
-            variant: 'default',
-            title: "⚠️ Mock Mode (No Credits)",
-            description: "Replicate credits empty. Showing input image for demo flow."
-          })
-        } else {
-          toast({
-            title: "AI Suit Applied",
-            description: "The suit has been generated successfully."
-          })
-        }
-      } else {
-        throw new Error("No valid output from AI")
-      }
-
-    } catch (e: any) {
-      console.error(e)
-      toast({
-        variant: "destructive",
-        title: "Generation Failed",
-        description: e.message || "Could not generate AI suit. Try again."
-      })
-    } finally {
-      setIsProcessing(false)
-      setToggles(prev => prev.map(t => t.id === "suit" ? { ...t, locked: false } : t))
-    }
-  }
-
+  }, [toggles, bgRemovedCache, photoData.imageUrl, processingRef.current, selectedColor])
 
   const handleProceed = () => {
     onProceedToPayment(finalImageUrl || photoData.imageUrl || undefined);
@@ -547,49 +428,6 @@ export function EditScreen({
                       )}
                     </button>
                   ))}
-                </div>
-              </div>
-            )}
-
-            {/* Suit Selection & Adjustment */}
-            {toggles.find(t => t.id === "suit")?.enabled && (
-              <div className="mb-10 rounded-2xl border-2 border-[#E5E7EB] bg-white p-5 animate-in slide-in-from-top-4 duration-300">
-                {/* Suit Picker */}
-                <div className="mb-6">
-                  <div className="mb-4 flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100 text-blue-600">
-                      <Shirt size={20} />
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-[#0F172A]">AI Suit Generator</h3>
-                      <p className="text-sm text-[#6B7280]">Select a style to generate (takes ~10s)</p>
-                    </div>
-                  </div>
-                  <div className="flex gap-4">
-                    {SUITS.map((suit) => (
-                      <button
-                        key={suit.id}
-                        disabled={isProcessing}
-                        onClick={() => handleSuitSelect(suit.id)}
-                        className={`flex flex-col items-center gap-2 p-2 rounded-xl transition-all ${selectedSuit === suit.id
-                          ? "bg-blue-50 border-2 border-blue-500 shadow-sm"
-                          : "border-2 border-transparent hover:bg-gray-50"
-                          } ${isProcessing ? 'opacity-50 cursor-not-allowed' : ''}`}
-                      >
-                        <div className="w-16 h-16 bg-gray-100 rounded-lg overflow-hidden relative">
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={suit.src} alt={suit.name} className="w-full h-full object-contain" />
-                        </div>
-                        <span className="text-xs font-medium text-gray-700">{suit.name}</span>
-                      </button>
-                    ))}
-                  </div>
-                  {isProcessing && (
-                    <div className="mt-4 flex items-center gap-2 text-sm text-blue-600 animate-pulse">
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      <span>Generating AI Suit...</span>
-                    </div>
-                  )}
                 </div>
               </div>
             )}
