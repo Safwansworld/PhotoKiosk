@@ -1,15 +1,16 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Check, Printer, Shield, Clock } from "lucide-react"
+import { Check, Printer, Shield, Clock, Share2 } from "lucide-react"
 import { QRCodeSVG } from "qrcode.react"
-import type { PhotoData } from "@/app/page"
+import type { PhotoData } from "@/components/kiosk/kiosk-main"
 
 interface PaymentScreenProps {
   photoData: PhotoData
   onComplete: () => void
   onBack: () => void
   language: "ENG" | "MAL"
+  sessionId: string | null
 }
 
 type PaymentStatus = "pending" | "processing" | "confirmed" | "printing" | "complete"
@@ -19,6 +20,7 @@ export function PaymentScreen({
   onComplete,
   onBack,
   language,
+  sessionId,
 }: PaymentScreenProps) {
   const [status, setStatus] = useState<PaymentStatus>("pending")
   const [printProgress, setPrintProgress] = useState(0)
@@ -100,7 +102,7 @@ export function PaymentScreen({
     if (status === "complete") {
       const timer = setTimeout(() => {
         onComplete()
-      }, 5000)
+      }, 30000)
       return () => clearTimeout(timer)
     }
   }, [status, onComplete])
@@ -122,11 +124,10 @@ export function PaymentScreen({
 
               {/* QR Code Section */}
               <div className="mb-10 flex flex-col items-center">
-                <div className={`relative rounded-3xl border-4 p-6 transition-all ${
-                  status === "processing" 
-                    ? "border-[#2563EB] bg-[#EFF6FF]" 
-                    : "border-[#E5E7EB] bg-white"
-                }`}>
+                <div className={`relative rounded-3xl border-4 p-6 transition-all ${status === "processing"
+                  ? "border-[#2563EB] bg-[#EFF6FF]"
+                  : "border-[#E5E7EB] bg-white"
+                  }`}>
                   <QRCodeSVG
                     value="upi://pay?pa=photopoint@upi&pn=PhotoPoint&am=100&cu=INR"
                     size={240}
@@ -134,7 +135,7 @@ export function PaymentScreen({
                     bgColor="transparent"
                     fgColor="#0F172A"
                   />
-                  
+
                   {/* Processing Overlay */}
                   {status === "processing" && (
                     <div className="absolute inset-0 flex items-center justify-center rounded-3xl bg-white/80 backdrop-blur-sm">
@@ -193,9 +194,8 @@ export function PaymentScreen({
             /* Printing / Complete State */
             <div className="flex flex-col items-center py-8">
               {/* Printer Icon */}
-              <div className={`mb-8 flex h-24 w-24 items-center justify-center rounded-full ${
-                status === "complete" ? "bg-[#ECFDF5]" : "bg-[#EFF6FF]"
-              }`}>
+              <div className={`mb-8 flex h-24 w-24 items-center justify-center rounded-full ${status === "complete" ? "bg-[#ECFDF5]" : "bg-[#EFF6FF]"
+                }`}>
                 {status === "complete" ? (
                   <Check className="h-12 w-12 text-[#059669]" />
                 ) : (
@@ -204,9 +204,8 @@ export function PaymentScreen({
               </div>
 
               {/* Status Text */}
-              <h2 className={`mb-6 text-3xl font-bold ${
-                status === "complete" ? "text-[#059669]" : "text-[#0F172A]"
-              }`}>
+              <h2 className={`mb-6 text-3xl font-bold ${status === "complete" ? "text-[#059669]" : "text-[#0F172A]"
+                }`}>
                 {t.status[status]}
               </h2>
 
@@ -225,12 +224,45 @@ export function PaymentScreen({
                 </div>
               )}
 
-              {/* Collect Photo Message */}
+              {/* Collect Photo Message & Share */}
               {status === "complete" && (
-                <div className="mt-4 rounded-2xl bg-[#ECFDF5] p-6 text-center">
-                  <p className="text-lg font-medium text-[#059669]">
-                    {t.collectPhoto}
-                  </p>
+                <div className="mt-6 flex flex-col gap-6 w-full animate-in slide-in-from-bottom-4 fade-in duration-700">
+                  <div className="rounded-2xl bg-[#ECFDF5] p-6 text-center transform transition-all hover:scale-[1.02]">
+                    <p className="text-lg font-bold text-[#059669]">
+                      {t.collectPhoto}
+                    </p>
+                  </div>
+
+                  {/* WhatsApp Share Section */}
+                  {sessionId && (
+                    <div className="bg-white rounded-2xl border-2 border-[#25D366] p-6 flex flex-row items-center justify-between gap-6 shadow-sm">
+                      <div className="text-left space-y-2 flex-1">
+                        <div className="flex items-center gap-2 text-[#25D366]">
+                          <Share2 className="w-6 h-6" />
+                          <span className="font-bold text-lg">Get Digital Copy</span>
+                        </div>
+                        <p className="text-sm text-gray-500 leading-relaxed">
+                          Scan to get your photo and share on WhatsApp instantly.
+                        </p>
+                      </div>
+                      <div className="bg-white p-2 rounded-xl border border-gray-100 shadow-sm shrink-0">
+                        <QRCodeSVG
+                          value={`${typeof window !== 'undefined' ? window.location.origin : ''}/mobile-share/${sessionId}`}
+                          size={120}
+                          level="M"
+                          fgColor="#0F172A"
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Manual Done Button */}
+                  <button
+                    onClick={onComplete}
+                    className="w-full py-4 rounded-xl font-bold bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors"
+                  >
+                    Done & Start New Session
+                  </button>
                 </div>
               )}
             </div>

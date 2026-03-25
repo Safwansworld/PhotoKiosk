@@ -80,17 +80,20 @@ export function EditScreen({
     {
       id: "navy",
       name: "Navy Suit",
-      src: "/—Pngtree—mens suit and tie coat_6212628.png"
+      src: "/—Pngtree—mens suit and tie coat_6212628.png",
+      prompt: "dark navy blue professional business suit, white shirt, blue tie"
     },
     {
       id: "black",
       name: "Black Suit",
-      src: "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMDAgMTUwIj4KICA8cGF0aCBkPSJNNDAgMTUwIEw0MCA1MCBMODAgMjAgTDEyMCAyMCBMMTYwIDUwIEwxNjAgMTUwIFoiIGZpbGw9IiMxMTE4MjciIC8+CiAgPHBhdGggZD0iTTgwIDIwIEwxMDAgNTAgTDEyMCAyMCIgZmlsbD0id2hpdGUiIC8+CiAgPHBhdGggZD0iTTEwMCAyMCBMMTAwIDYwIiBzdHJva2U9IiMzMzMiIHN0cm9rZS13aWR0aD0iNCIgLz4KPC9zdmc+"
+      src: "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMDAgMTUwIj4KICA8cGF0aCBkPSJNNDAgMTUwIEw0MCA1MCBMODAgMjAgTDEyMCAyMCBMMTYwIDUwIEwxNjAgMTUwIFoiIGZpbGw9IiMxMTE4MjciIC8+CiAgPHBhdGggZD0iTTgwIDIwIEwxMDAgNTAgTDEyMCAyMCIgZmlsbD0id2hpdGUiIC8+CiAgPHBhdGggZD0iTTEwMCAyMCBMMTAwIDYwIiBzdHJva2U9IiMzMzMiIHN0cm9rZS13aWR0aD0iNCIgLz4KPC9zdmc+",
+      prompt: "formal black tuxedo suit, white shirt, black bow tie, James Bond style"
     },
     {
       id: "grey",
       name: "Grey Suit",
-      src: "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMDAgMTUwIj4KICA8cGF0aCBkPSJNNDAgMTUwIEw0MCA1MCBMODAgMjAgTDEyMCAyMCBMMTYwIDUwIEwxNjAgMTUwIFoiIGZpbGw9IiM0YjU1NjMiIC8+CiAgPHBhdGggZD0iTTgwIDIwIEwxMDAgNTAgTDEyMCAyMCIgZmlsbD0id2hpdGUiIC8+CiAgPHBhdGggZD0iTTEwMCAyMCBMMTAwIDYwIiBzdHJva2U9IiMxMTE4MjciIHN0cm9rZS13aWR0aD0iNCIgLz4KPC9zdmc+"
+      src: "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMDAgMTUwIj4KICA8cGF0aCBkPSJNNDAgMTUwIEw0MCA1MCBMODAgMjAgTDEyMCAyMCBMMTYwIDUwIEwxNjAgMTUwIFoiIGZpbGw9IiM0YjU1NjMiIC8+CiAgPHBhdGggZD0iTTgwIDIwIEwxMDAgNTAgTDEyMCAyMCIgZmlsbD0id2hpdGUiIC8+CiAgPHBhdGggZD0iTTEwMCAyMCBMMTAwIDYwIiBzdHJva2U9IiMxMTE4MjciIHN0cm9rZS13aWR0aD0iNCIgLz4KPC9zdmc+",
+      prompt: "light grey formal business suit, white shirt, no tie, smart casual professional"
     },
   ]
 
@@ -282,40 +285,15 @@ export function EditScreen({
       ctx.drawImage(img, drawX, drawY, drawW, drawH, 0, 0, targetW, targetH)
 
       // Draw Suit Overlay
-      const suitToggle = toggles.find(t => t.id === "suit")?.enabled
-      if (suitToggle && selectedSuit) {
-        const suitObj = SUITS.find(s => s.id === selectedSuit)
-        if (suitObj) {
-          const suitImg = new Image()
-          suitImg.src = suitObj.src
-          suitImg.crossOrigin = "anonymous"
-          await new Promise((r) => {
-            suitImg.onload = r
-            suitImg.onerror = r // proceed even if fail
-          })
+      // LEGACY: If we want manual overlay, we keep this.
+      // BUT for AI Suit, we handle it separately via API call.
+      // So here we only draw if it's NOT an AI suit process.
+      // Actually, let's keep the manual one for "preview" or fallback if AI fails?
+      // No, let's switch entirely to AI Trigger.
 
-          // Calculate suit position based on transform
-          // Default width: relative to canvas width
-          const baseSuitW = targetW * 0.8 // 80% of width
-          const baseSuitH = baseSuitW * (suitImg.height / suitImg.width) // constant aspect
-
-          const finalW = baseSuitW * suitTransform.scale
-          const finalH = baseSuitH * suitTransform.scale
-
-          // Center horizontally by default + offset
-          const finalX = (targetW - finalW) / 2 + suitTransform.x
-          // Position at bottom by default + offset
-          const finalY = (targetH - finalH) + suitTransform.y
-
-          try {
-            if (suitImg.complete && suitImg.naturalWidth > 0) {
-              ctx.drawImage(suitImg, finalX, finalY, finalW, finalH)
-            }
-          } catch (e) {
-            console.error("Failed to draw suit image", e)
-          }
-        }
-      }
+      // If we are in "Suit" mode, we don't draw the overlay here.
+      // Instead, selecting a suit triggers the API call which updates 'bgRemovedCache' (the source).
+      // So this canvas logic just renders the current source.
 
       setFinalImageUrl(canvas.toDataURL("image/jpeg", 0.95))
     }
@@ -323,6 +301,80 @@ export function EditScreen({
     const timer = setTimeout(composeImage, 100)
     return () => clearTimeout(timer)
   }, [toggles, bgRemovedCache, photoData.imageUrl, processingRef.current, selectedColor, selectedSuit, suitTransform])
+
+  // Handle Suit Selection -> Trigger AI
+  useEffect(() => {
+    const suitToggle = toggles.find(t => t.id === "suit")?.enabled
+    if (suitToggle && selectedSuit) {
+      // Find suit details
+      const suitObj = SUITS.find(s => s.id === selectedSuit)
+      if (!suitObj) return
+
+      // We only trigger if we haven't already processed this specific suit for this image
+      // For simplicity, let's just trigger when button clicked (handled in handler)
+      // or here if we track "lastProcessedSuit".
+    }
+  }, [selectedSuit, toggles])
+
+  const handleSuitSelect = async (suitId: string) => {
+    setSelectedSuit(suitId)
+    const suitObj = SUITS.find(s => s.id === suitId)
+    if (!suitObj) return
+
+    // Trigger AI Generation
+    try {
+      setIsProcessing(true)
+      setToggles(prev => prev.map(t => t.id === "suit" ? { ...t, locked: true } : t)) // Lock while processing
+
+      const sourceImage = bgRemovedCache || photoData.imageUrl
+
+      const response = await fetch("/api/ai-suit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          image: sourceImage,
+          prompt: suitObj.prompt || "professional business suit",
+          // mask: we could generate a simple mask here if we had coordinates
+        })
+      })
+
+      const data = await response.json()
+
+      if (data.error) {
+        throw new Error(data.error)
+      }
+
+      if (data.output && data.output[0]) {
+        setBgRemovedCache(data.output[0]) // Update source with AI result
+
+        if (data.mock) {
+          toast({
+            variant: 'default',
+            title: "⚠️ Mock Mode (No Credits)",
+            description: "Replicate credits empty. Showing input image for demo flow."
+          })
+        } else {
+          toast({
+            title: "AI Suit Applied",
+            description: "The suit has been generated successfully."
+          })
+        }
+      } else {
+        throw new Error("No valid output from AI")
+      }
+
+    } catch (e: any) {
+      console.error(e)
+      toast({
+        variant: "destructive",
+        title: "Generation Failed",
+        description: e.message || "Could not generate AI suit. Try again."
+      })
+    } finally {
+      setIsProcessing(false)
+      setToggles(prev => prev.map(t => t.id === "suit" ? { ...t, locked: false } : t))
+    }
+  }
 
 
   const handleProceed = () => {
@@ -509,19 +561,20 @@ export function EditScreen({
                       <Shirt size={20} />
                     </div>
                     <div>
-                      <h3 className="font-semibold text-[#0F172A]">Select Attire</h3>
-                      <p className="text-sm text-[#6B7280]">Choose a formal suit</p>
+                      <h3 className="font-semibold text-[#0F172A]">AI Suit Generator</h3>
+                      <p className="text-sm text-[#6B7280]">Select a style to generate (takes ~10s)</p>
                     </div>
                   </div>
                   <div className="flex gap-4">
                     {SUITS.map((suit) => (
                       <button
                         key={suit.id}
-                        onClick={() => setSelectedSuit(suit.id)}
+                        disabled={isProcessing}
+                        onClick={() => handleSuitSelect(suit.id)}
                         className={`flex flex-col items-center gap-2 p-2 rounded-xl transition-all ${selectedSuit === suit.id
                           ? "bg-blue-50 border-2 border-blue-500 shadow-sm"
                           : "border-2 border-transparent hover:bg-gray-50"
-                          }`}
+                          } ${isProcessing ? 'opacity-50 cursor-not-allowed' : ''}`}
                       >
                         <div className="w-16 h-16 bg-gray-100 rounded-lg overflow-hidden relative">
                           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -531,49 +584,13 @@ export function EditScreen({
                       </button>
                     ))}
                   </div>
-                </div>
-
-                {/* Adjustment Controls */}
-                {selectedSuit && (
-                  <div className="border-t pt-4">
-                    <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-3">Adjust Position & Size</p>
-                    <div className="grid grid-cols-2 gap-4">
-                      {/* Size Controls */}
-                      <div className="bg-gray-50 rounded-xl p-3 flex items-center justify-between">
-                        <button
-                          onClick={() => setSuitTransform(prev => ({ ...prev, scale: Math.max(0.5, prev.scale - 0.1) }))}
-                          className="p-2 bg-white rounded-lg shadow-sm hover:bg-gray-50 active:scale-95 text-gray-700"
-                        >
-                          <ZoomOut size={18} />
-                        </button>
-                        <span className="text-sm font-medium text-gray-600">Size</span>
-                        <button
-                          onClick={() => setSuitTransform(prev => ({ ...prev, scale: Math.min(2.0, prev.scale + 0.1) }))}
-                          className="p-2 bg-white rounded-lg shadow-sm hover:bg-gray-50 active:scale-95 text-gray-700"
-                        >
-                          <ZoomIn size={18} />
-                        </button>
-                      </div>
-
-                      {/* Position Controls */}
-                      <div className="bg-gray-50 rounded-xl p-3 flex items-center justify-center gap-2">
-                        <div className="grid grid-cols-3 gap-1">
-                          <div />
-                          <button onClick={() => setSuitTransform(prev => ({ ...prev, y: prev.y - 10 }))} className="p-1 bg-white rounded text-gray-700 shadow-sm active:bg-gray-100 w-8 h-8 flex items-center justify-center"><ChevronUp size={16} /></button>
-                          <div />
-
-                          <button onClick={() => setSuitTransform(prev => ({ ...prev, x: prev.x - 10 }))} className="p-1 bg-white rounded text-gray-700 shadow-sm active:bg-gray-100 w-8 h-8 flex items-center justify-center"><ChevronLeft size={16} /></button>
-                          <div className="flex items-center justify-center"><Move size={16} className="text-gray-400" /></div>
-                          <button onClick={() => setSuitTransform(prev => ({ ...prev, x: prev.x + 10 }))} className="p-1 bg-white rounded text-gray-700 shadow-sm active:bg-gray-100 w-8 h-8 flex items-center justify-center"><ChevronRight size={16} /></button>
-
-                          <div />
-                          <button onClick={() => setSuitTransform(prev => ({ ...prev, y: prev.y + 10 }))} className="p-1 bg-white rounded text-gray-700 shadow-sm active:bg-gray-100 w-8 h-8 flex items-center justify-center"><ChevronDown size={16} /></button>
-                          <div />
-                        </div>
-                      </div>
+                  {isProcessing && (
+                    <div className="mt-4 flex items-center gap-2 text-sm text-blue-600 animate-pulse">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span>Generating AI Suit...</span>
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             )}
 

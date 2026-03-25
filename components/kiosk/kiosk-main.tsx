@@ -185,6 +185,7 @@ export default function KioskMain() {
                         onComplete={handlePaymentComplete}
                         onBack={handleBack}
                         language={language}
+                        sessionId={sessionId}
                     />
                 )}
             </div>

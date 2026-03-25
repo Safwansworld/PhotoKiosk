@@ -6,6 +6,7 @@ import './globals.css'
 
 
 
+
 export const metadata: Metadata = {
   title: 'PhotoPoint | Self-Service Photo Kiosk',
   description: 'Government-grade photo capture and printing. Studio lighting, auto-retouching, and instant prints.',
