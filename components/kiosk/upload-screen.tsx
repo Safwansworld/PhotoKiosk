@@ -258,17 +258,17 @@ export function UploadScreen({
           </div>
 
           {/* Card 2: WhatsApp */}
-          <div
+          {/* <div
             onClick={() => handleCardClick("whatsapp")}
             className="group flex w-[340px] cursor-pointer flex-col items-center rounded-3xl bg-white p-10 transition-all hover:scale-[1.02] active:scale-[0.98] soft-shadow"
-          >
-            {/* WhatsApp Logo */}
-            <div className="mb-8 flex h-24 w-24 items-center justify-center rounded-full bg-[#25D366]">
+          > */}
+          {/* WhatsApp Logo */}
+          {/* <div className="mb-8 flex h-24 w-24 items-center justify-center rounded-full bg-[#25D366]">
               <MessageCircle className="h-12 w-12 text-white" fill="white" />
-            </div>
+            </div> */}
 
-            {/* Text */}
-            <h3 className="mb-2 text-2xl font-bold text-[#0F172A]">
+          {/* Text */}
+          {/* <h3 className="mb-2 text-2xl font-bold text-[#0F172A]">
               {t.whatsapp.headline}
             </h3>
             <p className="mb-3 text-center text-lg text-[#6B7280]">
@@ -276,11 +276,11 @@ export function UploadScreen({
             </p>
             <span className="rounded-xl bg-[#F3F4F6] px-5 py-2.5 font-mono text-lg font-semibold text-[#0F172A]">
               {t.whatsapp.number}
-            </span>
+            </span> */}
 
-            {/* Hover Border */}
-            <div className="absolute inset-0 rounded-3xl border-2 border-transparent transition-colors group-hover:border-[#25D366]/30" />
-          </div>
+          {/* Hover Border */}
+          {/* <div className="absolute inset-0 rounded-3xl border-2 border-transparent transition-colors group-hover:border-[#25D366]/30" />
+          </div> */}
 
           {/* Card 3: USB */}
           <div

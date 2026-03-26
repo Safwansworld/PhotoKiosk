@@ -44,6 +44,10 @@ export default function KioskMain() {
 
         if (!imageToUpload) return
 
+        if (processedImageUrl) {
+            setPhotoData(prev => ({ ...prev, imageUrl: processedImageUrl }))
+        }
+
         setIsUploading(true)
         try {
             // 1. Convert Base64/DataURL to Blob
@@ -108,31 +112,14 @@ export default function KioskMain() {
     }
 
     const handlePaymentComplete = async () => {
-        // Update DB status to completed
         if (sessionId) {
             await supabase
                 .from('kiosk_sessions')
-                .update({
-                    payment_status: 'completed',
-                    print_status: 'printing'
-                })
+                .update({ print_status: 'completed' })
                 .eq('id', sessionId)
         }
 
-        // Reset after printing
-        setTimeout(async () => {
-            // Mark as print completed
-            if (sessionId) {
-                await supabase
-                    .from('kiosk_sessions')
-                    .update({ print_status: 'completed' })
-                    .eq('id', sessionId)
-            }
-
-            setPhotoData({ imageUrl: null, source: null })
-            setSessionId(null)
-            setCurrentScreen("attract")
-        }, 5000)
+        window.location.reload()
     }
 
     const handleBack = () => {
@@ -143,6 +130,10 @@ export default function KioskMain() {
         } else if (currentScreen === "payment") {
             setCurrentScreen("edit")
         }
+    }
+
+    const handleCancel = () => {
+        window.location.reload()
     }
 
     return (
@@ -184,6 +175,7 @@ export default function KioskMain() {
                         photoData={photoData}
                         onComplete={handlePaymentComplete}
                         onBack={handleBack}
+                        onCancel={handleCancel}
                         language={language}
                         sessionId={sessionId}
                     />

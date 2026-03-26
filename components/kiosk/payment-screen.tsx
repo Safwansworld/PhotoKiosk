@@ -3,12 +3,15 @@
 import { useState, useEffect } from "react"
 import { Check, Printer, Shield, Clock, Share2 } from "lucide-react"
 import { QRCodeSVG } from "qrcode.react"
+import Script from "next/script"
+import { supabase } from "@/lib/supabase"
 import type { PhotoData } from "@/components/kiosk/kiosk-main"
 
 interface PaymentScreenProps {
   photoData: PhotoData
   onComplete: () => void
   onBack: () => void
+  onCancel: () => void
   language: "ENG" | "MAL"
   sessionId: string | null
 }
@@ -19,16 +22,43 @@ export function PaymentScreen({
   photoData,
   onComplete,
   onBack,
+  onCancel,
   language,
   sessionId,
 }: PaymentScreenProps) {
   const [status, setStatus] = useState<PaymentStatus>("pending")
   const [printProgress, setPrintProgress] = useState(0)
+  const [timeLeft, setTimeLeft] = useState(60)
+
+  useEffect(() => {
+    if (status === "pending" || status === "processing") {
+      if (timeLeft <= 0) {
+        // Enforce cleanup of Razorpay iframe if it's still injected
+        const razorpayContainer = document.querySelector('.razorpay-container')
+        if (razorpayContainer) razorpayContainer.remove()
+        
+        onCancel() // Cancel payment and reset session
+        return
+      }
+      const timer = setInterval(() => {
+        setTimeLeft((prev) => prev - 1)
+      }, 1000)
+      return () => clearInterval(timer)
+    }
+  }, [status, timeLeft, onCancel])
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      const razorpayContainer = document.querySelector('.razorpay-container')
+      if (razorpayContainer) razorpayContainer.remove()
+    }
+  }, [])
 
   const content = {
     ENG: {
       title: "Complete Payment",
-      subtitle: "Scan QR code with any UPI app",
+      subtitle: "Pay via UPI, Card, or Netbanking",
       amount: "₹100",
       status: {
         pending: "Waiting for payment...",
@@ -37,14 +67,15 @@ export function PaymentScreen({
         printing: "Printing your photo...",
         complete: "Print complete!",
       },
-      secure: "Secured by UPI",
+      secure: "Secured by Razorpay",
       timeout: "Auto-cancel in 5:00",
       collectPhoto: "Please collect your photo from the tray below",
       printAnother: "Print Another",
+      cancelButton: "Cancel & Start Over",
     },
     MAL: {
       title: "പേയ്‌മെന്റ് പൂർത്തിയാക്കുക",
-      subtitle: "ഏതെങ്കിലും UPI ആപ്പ് ഉപയോഗിച്ച് QR കോഡ് സ്കാൻ ചെയ്യുക",
+      subtitle: "UPI, കാർഡ് അല്ലെങ്കിൽ നെറ്റ്ബാങ്കിംഗ് വഴി പണമടയ്ക്കുക",
       amount: "₹100",
       status: {
         pending: "പേയ്‌മെന്റിനായി കാത്തിരിക്കുന്നു...",
@@ -53,39 +84,163 @@ export function PaymentScreen({
         printing: "നിങ്ങളുടെ ഫോട്ടോ പ്രിന്റ് ചെയ്യുന്നു...",
         complete: "പ്രിന്റ് പൂർത്തിയായി!",
       },
-      secure: "UPI സുരക്ഷിതം",
+      secure: "Razorpay സുരക്ഷിതം",
       timeout: "5:00-ൽ ഓട്ടോ-ക്യാൻസൽ",
       collectPhoto: "ചുവടെയുള്ള ട്രേയിൽ നിന്ന് നിങ്ങളുടെ ഫോട്ടോ എടുക്കുക",
       printAnother: "മറ്റൊന്ന് പ്രിന്റ് ചെയ്യുക",
+      cancelButton: "റദ്ദാക്കുക",
     },
   }
 
   const t = content[language]
 
-  // Simulate payment flow
+  // Razorpay payment flow
+  const handlePayment = async () => {
+    try {
+      setStatus("processing")
+      // 1. Create order
+      const orderRes = await fetch("/api/create-razorpay-order", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amount: 1, sessionId }), // Changed to 1 INR for live testing
+      })
+      const orderData = await orderRes.json()
+
+      if (!orderData.id) {
+        throw new Error("Failed to create Razorpay order")
+      }
+
+      // 2. Open Razorpay Checkout Modal Overlay
+      const options = {
+        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+        amount: orderData.amount,
+        currency: orderData.currency,
+        name: "Photo Kiosk",
+        description: "Photo Print Transaction",
+        order_id: orderData.id,
+        handler: async function (response: any) {
+          try {
+            setStatus("processing")
+            const verifyRes = await fetch("/api/verify-razorpay-payment", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ ...response }),
+            })
+
+            if (verifyRes.ok) {
+              if (sessionId) {
+                await supabase
+                  .from('kiosk_sessions')
+                  .update({ payment_status: 'completed' })
+                  .eq('id', sessionId)
+              }
+              setStatus("confirmed")
+            } else {
+              alert("Payment verification failed")
+              setStatus("pending")
+            }
+          } catch (err) {
+            console.error(err)
+            setStatus("pending")
+          }
+        },
+        prefill: {
+          name: "User",
+          contact: "9999999999"
+        },
+        theme: {
+          color: "#2563EB"
+        },
+        modal: {
+          ondismiss: function () {
+            setStatus("pending")
+          }
+        }
+      };
+
+      const rzp1 = new (window as any).Razorpay(options);
+      rzp1.on('payment.failed', function (response: any) {
+        alert("Payment failed: " + response.error.description);
+        setStatus("pending")
+      });
+      rzp1.open();
+
+    } catch (err) {
+      console.error(err)
+      setStatus("pending")
+      alert("Failed to initialize payment")
+    }
+  }
+
   useEffect(() => {
-    if (status === "pending") {
-      const timer = setTimeout(() => {
-        setStatus("processing")
-      }, 3000)
-      return () => clearTimeout(timer)
-    }
+    // Automatically trigger payment on mount
+    handlePayment()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
-    if (status === "processing") {
-      const timer = setTimeout(() => {
-        setStatus("confirmed")
-      }, 2000)
-      return () => clearTimeout(timer)
-    }
-
+  useEffect(() => {
     if (status === "confirmed") {
       const timer = setTimeout(() => {
+        if (sessionId) {
+          supabase.from("kiosk_sessions").update({ print_status: "printing" }).eq("id", sessionId)
+        }
         setStatus("printing")
       }, 1500)
       return () => clearTimeout(timer)
     }
 
     if (status === "printing") {
+      if (photoData.imageUrl) {
+        const iframe = document.createElement('iframe')
+        iframe.style.cssText = 'position:absolute;width:0px;height:0px;border:none;visibility:hidden;'
+        document.body.appendChild(iframe)
+
+        const iframeDoc = iframe.contentWindow?.document
+        if (iframeDoc) {
+          iframeDoc.write(`
+            <html>
+              <head>
+                <style>
+                  @page { margin: 0.5in; size: auto; }
+                  body { 
+                    margin: 0; 
+                    padding: 0; 
+                    display: grid; 
+                    grid-template-columns: repeat(2, 1fr); 
+                    grid-template-rows: repeat(2, 1fr); 
+                    gap: 0.5in;
+                    width: 100%; 
+                    height: 100vh; 
+                    box-sizing: border-box; 
+                    background: white;
+                  }
+                  .photo-container {
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    width: 100%;
+                    height: 100%;
+                    overflow: hidden;
+                  }
+                  img { 
+                    max-width: 100%; 
+                    max-height: 100%; 
+                    object-fit: contain; 
+                  }
+                </style>
+              </head>
+              <body>
+                <div class="photo-container"><img src="${photoData.imageUrl}" /></div>
+                <div class="photo-container"><img src="${photoData.imageUrl}" /></div>
+                <div class="photo-container"><img src="${photoData.imageUrl}" /></div>
+                <div class="photo-container"><img src="${photoData.imageUrl}" onload="window.print(); setTimeout(function(){ window.parent.document.body.removeChild(window.frameElement); }, 2000);" /></div>
+              </body>
+            </html>
+          `)
+          iframeDoc.close()
+        }
+      }
+
       const interval = setInterval(() => {
         setPrintProgress((prev) => {
           if (prev >= 100) {
@@ -105,80 +260,95 @@ export function PaymentScreen({
       }, 30000)
       return () => clearTimeout(timer)
     }
-  }, [status, onComplete])
+  }, [status, onComplete, sessionId])
 
   return (
     <div className="flex h-full w-full items-center justify-center pb-24">
+      <Script src="https://checkout.razorpay.com/v1/checkout.js" />
       <div className="w-full max-w-2xl">
         {/* Main Card */}
         <div className="rounded-3xl bg-white p-12 soft-shadow">
           {status === "pending" || status === "processing" ? (
-            <>
+            <div className="flex flex-col items-center justify-center py-20">
               {/* Header */}
               <div className="mb-10 text-center">
                 <h1 className="mb-2 text-4xl font-bold tracking-tight text-[#0F172A]">
                   {t.title}
                 </h1>
-                <p className="text-xl text-[#6B7280]">{t.subtitle}</p>
+                <p className="text-xl text-[#6B7280]">Connecting to Razorpay Gateway...</p>
               </div>
 
-              {/* QR Code Section */}
-              <div className="mb-10 flex flex-col items-center">
-                <div className={`relative rounded-3xl border-4 p-6 transition-all ${status === "processing"
-                  ? "border-[#2563EB] bg-[#EFF6FF]"
-                  : "border-[#E5E7EB] bg-white"
-                  }`}>
-                  <QRCodeSVG
-                    value="upi://pay?pa=photopoint@upi&pn=PhotoPoint&am=100&cu=INR"
-                    size={240}
-                    level="H"
-                    bgColor="transparent"
-                    fgColor="#0F172A"
-                  />
-
-                  {/* Processing Overlay */}
-                  {status === "processing" && (
-                    <div className="absolute inset-0 flex items-center justify-center rounded-3xl bg-white/80 backdrop-blur-sm">
-                      <div className="flex flex-col items-center">
-                        <div className="mb-3 h-12 w-12 animate-spin rounded-full border-4 border-[#2563EB] border-t-transparent" />
-                        <span className="font-semibold text-[#0F172A]">
-                          {t.status.processing}
-                        </span>
-                      </div>
+              {/* Payment Loading Section */}
+              <div className="flex flex-col items-center">
+                {/* Circular 1-minute countdown */}
+                <div className="mt-8 flex flex-col items-center animate-in fade-in duration-500">
+                  <div className="relative flex items-center justify-center">
+                    <svg className="h-24 w-24 -rotate-90 transform">
+                      <circle
+                        cx="48"
+                        cy="48"
+                        r="40"
+                        stroke="currentColor"
+                        strokeWidth="8"
+                        fill="transparent"
+                        className="text-gray-200"
+                      />
+                      <circle
+                        cx="48"
+                        cy="48"
+                        r="40"
+                        stroke="currentColor"
+                        strokeWidth="8"
+                        fill="transparent"
+                        strokeDasharray={2 * Math.PI * 40}
+                        strokeDashoffset={(2 * Math.PI * 40) * (1 - timeLeft / 60)}
+                        className="text-[#2563EB] transition-all duration-1000 ease-linear"
+                        strokeLinecap="round"
+                      />
+                    </svg>
+                    <div className="absolute text-xl font-bold text-[#0F172A]">
+                       00:{timeLeft.toString().padStart(2, '0')}
                     </div>
-                  )}
-                </div>
-
-                {/* Amount */}
-                <div className="mt-6 rounded-2xl bg-[#F3F4F6] px-8 py-4">
-                  <span className="text-4xl font-bold text-[#0F172A]">{t.amount}</span>
-                </div>
-              </div>
-
-              {/* Status Indicators */}
-              <div className="flex items-center justify-center gap-8">
-                <div className="flex items-center gap-2">
-                  <Shield className="h-5 w-5 text-[#059669]" />
-                  <span className="text-sm font-medium text-[#6B7280]">{t.secure}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Clock className="h-5 w-5 text-[#6B7280]" />
-                  <span className="text-sm font-medium text-[#6B7280]">{t.timeout}</span>
-                </div>
-              </div>
-
-              {/* Waiting Animation */}
-              {status === "pending" && (
-                <div className="mt-8 flex justify-center">
-                  <div className="flex items-center gap-2">
-                    <div className="h-2 w-2 animate-pulse rounded-full bg-[#2563EB]" style={{ animationDelay: "0ms" }} />
-                    <div className="h-2 w-2 animate-pulse rounded-full bg-[#2563EB]" style={{ animationDelay: "200ms" }} />
-                    <div className="h-2 w-2 animate-pulse rounded-full bg-[#2563EB]" style={{ animationDelay: "400ms" }} />
-                    <span className="ml-2 text-sm text-[#6B7280]">{t.status.pending}</span>
                   </div>
+                  <p className="mt-4 text-sm font-medium text-[#6B7280]">
+                    Cancelling payment in 00:{timeLeft.toString().padStart(2, '0')}
+                  </p>
                 </div>
-              )}
-            </>
+
+                {/* Action Buttons in case modal was closed */}
+                {status === "pending" && (
+                  <div className="mt-8 flex gap-4">
+                    <button
+                      onClick={onCancel}
+                      className="rounded-xl border-2 border-[#E5E7EB] bg-white px-8 py-4 text-xl font-bold text-[#4B5563] shadow-sm hover:bg-[#F9FAFB] hover:text-[#111827] transition-all"
+                    >
+                      {t.cancelButton}
+                    </button>
+                    <button
+                      onClick={handlePayment}
+                      className="rounded-xl bg-[#0F172A] px-8 py-4 text-xl font-bold text-white shadow-xl hover:bg-[#1E293B] transition-colors"
+                    >
+                      Retry Payment
+                    </button>
+                  </div>
+                )}
+
+                {/* Development Test Button */}
+                {process.env.NODE_ENV === 'development' && status === "pending" && (
+                  <button
+                    onClick={async () => {
+                      if (sessionId) {
+                        await supabase.from('kiosk_sessions').update({ payment_status: 'completed' }).eq('id', sessionId)
+                      }
+                      setStatus('confirmed')
+                    }}
+                    className="mt-6 rounded-lg bg-red-100 px-4 py-2 text-xs font-bold text-red-600 hover:bg-red-200"
+                  >
+                    Bypass Mock Verify (Dev Only)
+                  </button>
+                )}
+              </div>
+            </div>
           ) : status === "confirmed" ? (
             /* Payment Confirmed State */
             <div className="flex flex-col items-center py-8">
@@ -269,18 +439,12 @@ export function PaymentScreen({
           )}
         </div>
 
-        {/* UPI Logo Bar */}
+        {/* Payment Network Logo Bar */}
         <div className="mt-6 flex items-center justify-center gap-6 opacity-50">
           <span className="text-sm font-medium text-[#6B7280]">Powered by</span>
           <div className="flex items-center gap-4">
-            <div className="rounded bg-[#5F259F] px-3 py-1 text-xs font-bold text-white">
-              PhonePe
-            </div>
-            <div className="rounded bg-[#002E6E] px-3 py-1 text-xs font-bold text-white">
-              Paytm
-            </div>
-            <div className="rounded bg-[#4285F4] px-3 py-1 text-xs font-bold text-white">
-              GPay
+            <div className="font-bold text-[#0F172A] px-3 py-1 rounded bg-gray-200/50">
+              Razorpay Checkout
             </div>
           </div>
         </div>
